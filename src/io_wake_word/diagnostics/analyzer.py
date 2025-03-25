@@ -1,0 +1,203 @@
+"""
+Data Analysis - Tools for analyzing training data and debugging models
+"""
+import logging
+import os
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
+
+import librosa
+import numpy as np
+
+logger = logging.getLogger("io_wake_word.diagnostics")
+
+def analyze_audio_files(
+    audio_dir: Union[str, Path], 
+    limit: Optional[int] = None
+) -> Dict[str, Any]:
+    """Analyze audio files in a directory
+    
+    Args:
+        audio_dir: Directory containing audio files
+        limit: Maximum number of files to analyze
+        
+    Returns:
+        Dictionary with analysis results
+    """
+    logger.info(f"Analyzing audio files in {audio_dir}")
+    
+    # Get all WAV files
+    audio_dir = Path(audio_dir)
+    wav_files = list(audio_dir.glob("*.wav"))
+    if limit:
+        wav_files = wav_files[:limit]
+    
+    if not wav_files:
+        logger.warning(f"No WAV files found in {audio_dir}")
+        return {"files_found": 0}
+    
+    logger.info(f"Analyzing {len(wav_files)} WAV files")
+    
+    # Track audio statistics
+    durations = []
+    energies = []
+    sample_rates = []
+    channels = []
+    
+    # Process each file
+    for file_path in wav_files:
+        try:
+            # Load audio
+            y, sr = librosa.load(str(file_path), sr=None)
+            
+            # Calculate statistics
+            duration = len(y) / sr
+            energy = np.mean(y**2)
+            
+            durations.append(duration)
+            energies.append(energy)
+            sample_rates.append(sr)
+            channels.append(1 if len(y.shape) == 1 else y.shape[1])
+            
+        except Exception as e:
+            logger.error(f"Error processing {file_path}: {e}")
+    
+    # Calculate summary statistics
+    if durations:
+        results = {
+            "files_analyzed": len(durations),
+            "mean_duration": float(np.mean(durations)),
+            "min_duration": float(np.min(durations)),
+            "max_duration": float(np.max(durations)),
+            "mean_energy": float(np.mean(energies)),
+            "min_energy": float(np.min(energies)),
+            "max_energy": float(np.max(energies)),
+            "sample_rates": list(set(sample_rates)),
+            "has_multichannel": any(c > 1 for c in channels),
+        }
+        
+        logger.info(f"Analysis complete: {results}")
+        return results
+    else:
+        logger.warning("No valid audio files were processed")
+        return {"files_analyzed": 0}
+
+def analyze_feature_extraction(
+    audio_file: Union[str, Path]
+) -> Dict[str, Any]:
+    """Analyze feature extraction from an audio file
+    
+    Args:
+        audio_file: Path to audio file
+        
+    Returns:
+        Dictionary with analysis results
+    """
+    from io_wake_word.audio.features import FeatureExtractor
+    
+    logger.info(f"Analyzing feature extraction from {audio_file}")
+    
+    try:
+        # Load audio
+        y, sr = librosa.load(str(audio_file), sr=16000)
+        
+        # Create feature extractor
+        extractor = FeatureExtractor()
+        
+        # Add audio to buffer
+        extractor.audio_buffer = y
+        
+        # Extract features
+        features = extractor.extract(np.array([]))
+        
+        if features is not None:
+            # Feature statistics
+            mean_val = float(np.mean(features))
+            std_val = float(np.std(features))
+            min_val = float(np.min(features))
+            max_val = float(np.max(features))
+            
+            results = {
+                "feature_shape": list(features.shape),
+                "mean": mean_val,
+                "std": std_val,
+                "min": min_val,
+                "max": max_val,
+                "success": True,
+            }
+            
+            logger.info(f"Feature extraction successful: {results}")
+            return results
+        else:
+            logger.warning(f"Failed to extract features from {audio_file}")
+            return {"success": False, "error": "Feature extraction returned None"}
+            
+    except Exception as e:
+        logger.error(f"Error analyzing features for {audio_file}: {e}")
+        return {"success": False, "error": str(e)}
+
+def analyze_model(
+    model_path: Union[str, Path]
+) -> Dict[str, Any]:
+    """Analyze a model file
+    
+    Args:
+        model_path: Path to model file
+        
+    Returns:
+        Dictionary with analysis results
+    """
+    import torch
+    from io_wake_word.models.architecture import load_model
+    
+    logger.info(f"Analyzing model: {model_path}")
+    
+    try:
+        # Try loading the model
+        model = load_model(model_path)
+        
+        if model is None:
+            return {"success": False, "error": "Failed to load model"}
+        
+        # Get model structure
+        model_type = model.__class__.__name__
+        
+        # Count parameters
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        
+        results = {
+            "success": True,
+            "model_type": model_type,
+            "total_params": total_params,
+            "trainable_params": trainable_params,
+            "layers": [],
+        }
+        
+        # Get layer information
+        for name, module in model.named_children():
+            if hasattr(module, "children") and len(list(module.children())) > 0:
+                for subname, submodule in module.named_children():
+                    layer_name = f"{name}.{subname}"
+                    layer_type = submodule.__class__.__name__
+                    layer_params = sum(p.numel() for p in submodule.parameters())
+                    results["layers"].append({
+                        "name": layer_name,
+                        "type": layer_type,
+                        "params": layer_params,
+                    })
+            else:
+                layer_type = module.__class__.__name__
+                layer_params = sum(p.numel() for p in module.parameters())
+                results["layers"].append({
+                    "name": name,
+                    "type": layer_type,
+                    "params": layer_params,
+                })
+        
+        logger.info(f"Model analysis complete: {model_type}, {total_params} parameters")
+        return results
+        
+    except Exception as e:
+        logger.error(f"Error analyzing model: {e}")
+        return {"success": False, "error": str(e)}
