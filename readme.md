@@ -1,5 +1,7 @@
 # Io Wake Word Detection Engine
 
+**WORK IN PROGESS!!!** If you have somehow stumbled upon this pre-actual release, know that ```pip install``` doesn't work from the global repos, you need to clone this and install it manually. The code needs considerably more testing before it's ready.
+
 A lightweight, privacy-focused wake word detection system that runs entirely offline. This Python package provides tools for training custom wake words, detecting them in real-time, and executing actions when wake words are detected.
 
 ## Features
