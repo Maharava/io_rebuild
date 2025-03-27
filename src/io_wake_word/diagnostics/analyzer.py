@@ -4,10 +4,11 @@ Data Analysis - Tools for analyzing training data and debugging models
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import librosa
 import numpy as np
+import torch
 
 logger = logging.getLogger("io_wake_word.diagnostics")
 
@@ -200,4 +201,100 @@ def analyze_model(
         
     except Exception as e:
         logger.error(f"Error analyzing model: {e}")
+        return {"success": False, "error": str(e)}
+
+def analyze_detection_performance(
+    model_path: Union[str, Path],
+    test_files: List[Union[str, Path]],
+    ground_truth: List[bool]
+) -> Dict[str, Any]:
+    """Analyze detection performance on a test set
+    
+    Args:
+        model_path: Path to model file
+        test_files: List of audio file paths
+        ground_truth: List of expected detection results (True/False)
+        
+    Returns:
+        Dictionary with performance metrics
+    """
+    from io_wake_word.models.detector import WakeWordDetector
+    from io_wake_word.audio.features import FeatureExtractor
+    
+    if len(test_files) != len(ground_truth):
+        logger.error("Mismatch between test files and ground truth")
+        return {"success": False, "error": "Mismatch between test files and ground truth"}
+    
+    try:
+        # Load model
+        detector = WakeWordDetector(model_path=model_path)
+        extractor = FeatureExtractor()
+        
+        # Track results
+        true_positives = 0
+        false_positives = 0
+        true_negatives = 0
+        false_negatives = 0
+        confidences = []
+        
+        # Process each file
+        for i, file_path in enumerate(test_files):
+            expected = ground_truth[i]
+            
+            # Load audio
+            y, sr = librosa.load(str(file_path), sr=16000)
+            
+            # Extract features
+            extractor.clear_buffer()
+            extractor.audio_buffer = y
+            features = extractor.extract(np.array([]))
+            
+            if features is not None:
+                # Detect wake word
+                detected, confidence = detector.detect(features)
+                confidences.append(confidence)
+                
+                # Update metrics
+                if detected and expected:
+                    true_positives += 1
+                elif detected and not expected:
+                    false_positives += 1
+                elif not detected and expected:
+                    false_negatives += 1
+                else:  # not detected and not expected
+                    true_negatives += 1
+            else:
+                logger.warning(f"Failed to extract features from {file_path}")
+                # Count as false negative if expected to detect
+                if expected:
+                    false_negatives += 1
+                else:
+                    true_negatives += 1
+        
+        # Calculate metrics
+        total = len(test_files)
+        accuracy = (true_positives + true_negatives) / total if total > 0 else 0
+        precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+        recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+        
+        results = {
+            "success": True,
+            "total_files": total,
+            "true_positives": true_positives,
+            "false_positives": false_positives,
+            "true_negatives": true_negatives,
+            "false_negatives": false_negatives,
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "mean_confidence": float(np.mean(confidences)) if confidences else 0,
+        }
+        
+        logger.info(f"Detection performance: accuracy={accuracy:.4f}, precision={precision:.4f}, recall={recall:.4f}, f1={f1:.4f}")
+        return results
+        
+    except Exception as e:
+        logger.error(f"Error analyzing detection performance: {e}")
         return {"success": False, "error": str(e)}

@@ -86,7 +86,7 @@ def create_matching_model(state_dict, n_mfcc=13, num_frames=101):
     
     if model_type == "simple":
         logger.info("Detected SimpleWakeWordModel architecture")
-        return SimpleWakeWordModel(n_mfcc=n_mfcc, numreturn SimpleWakeWordModel(n_mfcc=n_mfcc, num_frames=num_frames)
+        return SimpleWakeWordModel(n_mfcc=n_mfcc, num_frames=num_frames)
     elif model_type == "standard":
         logger.info("Detected StandardWakeWordModel architecture")
         return WakeWordModel(n_mfcc=n_mfcc, num_frames=num_frames)
