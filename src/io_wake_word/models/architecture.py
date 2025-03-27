@@ -198,6 +198,74 @@ def load_model(
     
     Args:
         path: Path to the model file
+        n_mfcc: Number of MFCC coefficients
+        num_frames: Number of time frames
+        
+    Returns:
+        Loaded model or None if loading failed
+    """
+    if not path:
+        logger.error("Model path is None")
+        return None
+    
+    # Resolve the model path to handle relative paths and model names
+    from io_wake_word.utils.paths import resolve_model_path
+    path = resolve_model_path(path)
+    
+    if not path.exists():
+        logger.error(f"Model file not found: {path}")
+        return None
+    
+    try:
+        # Load state dictionary to check architecture
+        state_dict = torch.load(path, map_location=torch.device('cpu'))
+        
+        # Check for model architecture by examining state_dict keys
+        is_simple_model = any('conv_layer' in key for key in state_dict.keys())
+        logger.info(f"Detected {'SimpleWakeWordModel' if is_simple_model else 'WakeWordModel'} architecture")
+        
+        # Create the appropriate model based on detected architecture
+        if is_simple_model:
+            logger.info(f"Creating SimpleWakeWordModel with n_mfcc={n_mfcc}, num_frames={num_frames}")
+            model = SimpleWakeWordModel(n_mfcc=n_mfcc, num_frames=num_frames)
+        else:
+            logger.info(f"Creating WakeWordModel with n_mfcc={n_mfcc}, num_frames={num_frames}")
+            model = WakeWordModel(n_mfcc=n_mfcc, num_frames=num_frames)
+        
+        # Try loading the state dict
+        try:
+            model.load_state_dict(state_dict)
+        except Exception as e:
+            logger.error(f"Error loading state dict: {e}")
+            logger.warning("This might be due to model architecture mismatch. Trying the other architecture...")
+            
+            # Try the other architecture
+            if is_simple_model:
+                model = WakeWordModel(n_mfcc=n_mfcc, num_frames=num_frames)
+            else:
+                model = SimpleWakeWordModel(n_mfcc=n_mfcc, num_frames=num_frames)
+                
+            try:
+                model.load_state_dict(state_dict)
+                logger.info("Successfully loaded with alternate architecture")
+            except Exception as e2:
+                logger.error(f"Failed with alternate architecture too: {e2}")
+                return None
+        
+        # Set to evaluation mode
+        model.eval()
+        
+        logger.info(f"Model loaded successfully from {path}")
+        return model
+        
+    except Exception as e:
+        logger.error(f"Error loading model: {e}")
+        return None
+ -> Optional[nn.Module]:
+    """Load model from disk with automatic architecture detection
+    
+    Args:
+        path: Path to the model file
         n_mfcc: Number of MFCC features
         num_frames: Number of time frames
         

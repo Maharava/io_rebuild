@@ -13,6 +13,7 @@ import numpy as np
 import torch
 
 from io_wake_word.models.architecture import load_model
+from io_wake_word.utils.paths import resolve_model_path
 
 logger = logging.getLogger("io_wake_word.models")
 
@@ -76,8 +77,15 @@ class WakeWordDetector:
             return False
             
         try:
+            # Resolve model path (check default directory if needed)
+            resolved_path = resolve_model_path(model_path)
+            
+            if not resolved_path.exists():
+                logger.error(f"Model file not found: {model_path}")
+                return False
+                
             # Load model, specifying n_mfcc=13
-            new_model = load_model(model_path, n_mfcc=13, num_frames=101)
+            new_model = load_model(resolved_path, n_mfcc=13, num_frames=101)
             
             if new_model:
                 # Switch to evaluation mode
@@ -89,6 +97,7 @@ class WakeWordDetector:
                     self.recent_predictions.clear()
                     self.high_confidence_streak = 0
                 
+                logger.info(f"Model loaded successfully from {resolved_path}")
                 return True
             else:
                 logger.error("Failed to load model (returned None)")

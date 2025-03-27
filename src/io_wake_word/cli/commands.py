@@ -21,7 +21,7 @@ from io_wake_word.models.trainer import WakeWordTrainer
 from io_wake_word.utils.actions import ActionHandler
 from io_wake_word.utils.config import Config
 from io_wake_word.utils.paths import (ensure_app_directories, get_data_dir,
-                                    get_models_dir)
+                                    get_models_dir, resolve_model_path)
 
 logger = logging.getLogger("io_wake_word.cli")
 
@@ -150,9 +150,12 @@ def detect_command(args) -> int:
         Exit code
     """
     # Validate arguments
-    model_path = Path(args.model)
+    model_path_str = args.model
+    model_path = resolve_model_path(model_path_str)
+    
     if not model_path.exists():
-        print(f"Error: Model file not found: {model_path}")
+        print(f"Error: Model file not found: {model_path_str}")
+        print(f"Looked in default models directory: {get_models_dir()}")
         return 1
     
     # Create detector
@@ -269,9 +272,12 @@ def analyze_command(args) -> int:
         
     elif args.model:
         # Analyze model
-        model_path = Path(args.model)
+        model_path_str = args.model
+        model_path = resolve_model_path(model_path_str)
+        
         if not model_path.exists():
-            print(f"Error: Model file not found: {model_path}")
+            print(f"Error: Model file not found: {model_path_str}")
+            print(f"Looked in default models directory: {get_models_dir()}")
             return 1
         
         print(f"Analyzing model: {model_path}...")

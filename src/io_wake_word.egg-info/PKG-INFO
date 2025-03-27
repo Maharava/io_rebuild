@@ -1,0 +1,32 @@
+Metadata-Version: 2.4
+Name: io_wake_word
+Version: 0.2.0
+Summary: A fully offline wake word detection engine using a lightweight CNN architecture
+Author: Io Wake Word Engine Developer
+License: MIT
+Keywords: wake word,speech recognition,voice assistant
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.20.0
+Requires-Dist: PyAudio>=0.2.11
+Requires-Dist: torch>=1.9.0
+Requires-Dist: librosa>=0.8.0
+Requires-Dist: tqdm>=4.62.0
+Requires-Dist: scikit-learn>=0.24.0
+Provides-Extra: ui
+Requires-Dist: customtkinter>=5.1.2; extra == "ui"
+Requires-Dist: pillow>=8.0.0; extra == "ui"
+Requires-Dist: pystray>=0.19.0; extra == "ui"
+Provides-Extra: dev
+Requires-Dist: pytest>=6.0; extra == "dev"
+Requires-Dist: black>=21.5b2; extra == "dev"
+Requires-Dist: isort>=5.9.1; extra == "dev"
+
+# Io Wake Word Detection Engine
+
+A fully offline wake word detection system using a lightweight CNN architecture. The system operates entirely on the local machine without requiring internet connectivity, making it suitable for privacy-conscious applications.
+
+## Installation
+
+```bash
+pip install io-wake-word

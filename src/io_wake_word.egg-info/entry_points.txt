@@ -1,0 +1,2 @@
+[console_scripts]
+io-wake-word = io_wake_word.cli.main:main

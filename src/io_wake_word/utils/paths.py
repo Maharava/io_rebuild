@@ -3,7 +3,7 @@ Path utilities for Io wake word detection
 """
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 # Base directory for all Io data
 IO_DIR_ENV = "IO_WAKE_WORD_DIR"
@@ -59,6 +59,39 @@ def get_logs_dir() -> Path:
     logs_dir = get_base_dir() / "logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
     return logs_dir
+
+def resolve_model_path(model_path_str: Union[str, Path]) -> Path:
+    """Resolve a model path string to an actual file path
+    
+    This function handles both absolute paths and model names.
+    If just a filename is provided, it will look in the default models directory.
+    
+    Args:
+        model_path_str: Model path string or filename
+        
+    Returns:
+        Resolved Path object
+    """
+    # Convert to string if it's already a Path
+    if isinstance(model_path_str, Path):
+        model_path_str = str(model_path_str)
+    
+    # Convert to Path
+    model_path = Path(model_path_str)
+    
+    # If the path exists as provided, use it
+    if model_path.exists():
+        return model_path
+    
+    # If it's just a filename, look in the default models directory
+    if not model_path.is_absolute() and "/" not in str(model_path) and "\\" not in str(model_path):
+        default_path = get_models_dir() / model_path
+        if default_path.exists():
+            print(f"Found model at default location: {default_path}")
+            return default_path
+    
+    # Return the original path (will fail with appropriate error)
+    return model_path
 
 def ensure_app_directories() -> None:
     """Create all necessary application directories"""
