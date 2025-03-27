@@ -7,6 +7,7 @@ import queue
 import subprocess
 import threading
 import time
+import os
 from typing import Any, Callable, Dict, Optional, Union
 
 logger = logging.getLogger("io_wake_word.utils")

@@ -1,0 +1,186 @@
+# Io Wake Word Detection Engine - To Do List
+
+## Critical Bugs
+
+1. **Rename Non-Standard `init.py` Files**
+   - Change all `init.py` files to the standard `__init__.py` in:
+     - `src/io_wake_word/audio/init.py`
+     - `src/io_wake_word/utils/init.py`
+     - `src/io_wake_word/models/init.py`
+     - `src/io_wake_word/diagnostics/init.py`
+     - `src/io_wake_word/cli/init.py`
+   - Update imports in affected files
+
+2. **Remove Duplicated `load_model` Function**
+   - In `src/io_wake_word/models/architecture.py` there are two implementations of `load_model`
+   - Keep the more robust version and remove the duplicate
+
+3. **Add Missing Import in `utils/actions.py`**
+   - Add `import os` to fix potential runtime errors
+
+4. **Fix Missing Arguments in `CustomScriptAction.execute()`**
+   - `os` module is used but not imported
+
+## Code Structure Improvements
+
+1. **Consistent Path Object Usage**
+   - Standardize on `Path` objects throughout the codebase
+   - Replace string path manipulation with Path operations
+
+2. **Refactor Large UI Classes**
+   - Break down `TrainingPanel` class in `apps/io_wake_word/ui/training_panel.py`
+   - Extract helper methods in `ConfigPanel` class
+   - Consider moving dialog creation to separate utility functions
+
+3. **Simplified Model Architecture**
+   - Consider unifying `WakeWordModel` and `SimpleWakeWordModel` with configuration parameters
+   - Provide factory functions for different model sizes
+
+4. **Improve Error Handling**
+   - Add more specific exception types
+   - Implement better recovery mechanisms for audio stream failures
+
+5. **Extract Common UI Patterns**
+   - Create utility functions for common patterns like dialog creation
+   - Implement a common progress indicator
+
+## Performance Optimizations
+
+1. **Optimize Feature Extraction**
+   - Consider alternatives to librosa for real-time MFCC extraction
+   - Investigate torchaudio for GPU acceleration where available
+   - Implement caching for repeated audio frames
+
+2. **Reduce Memory Usage**
+   - Profile memory usage during long detection sessions
+   - Optimize buffer sizes for different audio qualities
+
+3. **Optimize Model Inference**
+   - Investigate ONNX export for faster CPU inference
+   - Add support for quantized models
+   - Consider TensorRT for supported platforms
+
+4. **Improve Thread Synchronization**
+   - Review lock usage in `AudioCapture` and `WakeWordDetector`
+   - Consider lock-free algorithms where appropriate
+
+## Feature Enhancements
+
+1. **Add Support for Multiple Wake Words**
+   - Allow detecting multiple wake words with different actions
+   - Implement priority/precedence for wake words
+
+2. **Provide Speaker Verification Option**
+   - Add optional speaker verification to reduce false activations
+   - Implement voice profile enrollment
+
+3. **Implement Adaptive Background Noise Handling**
+   - Enhance VAD with adaptive thresholds based on environment
+   - Add dynamic gain control
+
+4. **Add GPU Acceleration Support**
+   - Provide optional GPU acceleration for training and inference
+   - Support CUDA, ROCm, and Metal backends
+
+5. **Implement Wake Word Visualization**
+   - Add spectrogram visualization for training data
+   - Implement real-time visualization during detection
+
+6. **Add Support for Wake Word Phrases**
+   - Extend to support multi-word phrases
+   - Implement word sequence detection
+
+## Documentation Improvements
+
+1. **Add API Documentation Website**
+   - Generate comprehensive API docs with Sphinx
+   - Add more examples and tutorials
+
+2. **Improve Code Comments**
+   - Review and enhance docstrings for all public methods
+   - Add usage examples in docstrings
+
+3. **Create Jupyter Notebooks**
+   - Add example notebooks for training, customization, and integration
+   - Include visualization and analysis examples
+
+4. **Add Architecture Documentation**
+   - Document the neural network architecture in detail
+   - Explain the audio processing pipeline
+
+## Testing Enhancements
+
+1. **Increase Unit Test Coverage**
+   - Add tests for all core modules
+   - Implement integration tests for the full pipeline
+
+2. **Add Benchmark Tests**
+   - Create benchmarks for different hardware configurations
+   - Test performance on resource-constrained devices
+
+3. **Implement Continuous Integration**
+   - Set up GitHub Actions or similar CI system
+   - Add automated testing for all supported platforms
+
+4. **Create Test Datasets**
+   - Build standardized datasets for testing and benchmarking
+   - Include diverse speakers and background conditions
+
+## Deployment and Packaging
+
+1. **Create Binary Distributions**
+   - Provide pre-built wheels for popular platforms
+   - Consider standalone executables with PyInstaller
+
+2. **Add Containerization Support**
+   - Create Docker images for training and deployment
+   - Provide Kubernetes configurations for scaled deployments
+
+3. **Improve Installation Process**
+   - Add better error handling for missing dependencies
+   - Provide fallbacks for PyAudio installation issues
+
+4. **Create Platform-Specific Distributions**
+   - Package for Linux distributions
+   - Add Windows installer
+   - Create macOS package
+
+## Future Research Areas
+
+1. **Investigate Transformer-based Models**
+   - Research lightweight transformer architectures
+   - Compare with current CNN architecture
+
+2. **Explore Few-shot Learning**
+   - Implement techniques to train with fewer examples
+   - Add transfer learning from pre-trained models
+
+3. **Research On-device Training**
+   - Investigate incremental learning methods
+   - Add capability to improve models during usage
+
+4. **Investigate Noise Suppression Techniques**
+   - Add advanced noise suppression algorithms
+   - Research wake word isolation methods
+
+5. **Explore Multilingual Support**
+   - Test and optimize for non-English wake words
+   - Add language-specific preprocessing
+
+## Environment-Specific Issues
+
+1. **Improve macOS Audio Support**
+   - Address CoreAudio permission issues
+   - Fix device selection on newer macOS versions
+
+2. **Enhance Windows Compatibility**
+   - Test on Windows 11
+   - Address system tray icon issues
+
+3. **Optimize for Raspberry Pi**
+   - Create optimized builds for ARM processors
+   - Provide installation scripts for Raspberry Pi OS
+
+4. **Address Mobile Device Support**
+   - Investigate Python-for-Android compatibility
+   - Research iOS integration options
